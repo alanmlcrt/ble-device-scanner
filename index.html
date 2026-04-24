@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flipper Scanner | BLE Detection Tool</title>
+  <meta name="description" content="Outil de détection BLE pour identifier les appareils Flipper Zero à proximité via Web Bluetooth." />
+
+  <!-- Fonts (same as portfolio) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Circuit Canvas Background -->
+  <canvas id="circuitCanvas"></canvas>
+
+  <!-- Top Nav Bar -->
+  <nav id="topNav">
+    <a href="#" class="nav-brand">
+      <span class="text-glow">FLIPPER_SCAN</span>
+      <span class="nav-dot"></span>
+    </a>
+    <div class="nav-status">
+      <span class="material-symbols-outlined nav-icon">bluetooth_searching</span>
+      <span class="nav-label">BLE_SCANNER // v1.0</span>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="mainContent">
+
+    <!-- Hero Section -->
+    <section id="heroSection" class="hero">
+      <div class="hero-inner">
+        <div class="hero-tag">
+          <span class="material-symbols-outlined tag-icon">radar</span>
+          <span class="tag-text">/SYSTEM_SCAN</span>
+        </div>
+
+        <h1 class="hero-title">
+          FLIPPER <span class="accent">SCANNER</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Détectez les appareils <span class="highlight">Flipper Zero</span> à proximité via Bluetooth Low Energy.
+          <br />Chrome uniquement — Web Bluetooth API.
+        </p>
+
+        <!-- Browser Check Warning -->
+        <div id="browserWarning" class="browser-warning hidden">
+          <span class="material-symbols-outlined">warning</span>
+          <span>Ce navigateur ne supporte pas le Web Bluetooth. Utilisez <strong>Google Chrome</strong>.</span>
+        </div>
+
+        <!-- Chrome Flag Warning -->
+        <div id="flagWarning" class="flag-warning hidden">
+          <div class="flag-warning-header">
+            <span class="material-symbols-outlined">flag</span>
+            <span class="flag-warning-title">Activation requise</span>
+          </div>
+          <p class="flag-warning-text">
+            Le scan passif BLE nécessite d'activer un flag expérimental dans Chrome.
+            Copiez l'URL ci-dessous, collez-la dans la barre d'adresse, activez le flag et relancez Chrome.
+          </p>
+          <div class="flag-url-box">
+            <code class="flag-url">chrome://flags/#enable-experimental-web-platform-features</code>
+            <button id="copyFlagBtn" class="copy-flag-btn">
+              <span class="material-symbols-outlined" style="font-size:16px">content_copy</span>
+              <span class="copy-label">COPIER LE LIEN</span>
+            </button>
+          </div>
+          <div class="flag-steps">
+            <div class="flag-step">
+              <span class="step-number">1</span>
+              <span>Collez l'URL dans la barre d'adresse de Chrome</span>
+            </div>
+            <div class="flag-step">
+              <span class="step-number">2</span>
+              <span>Passez le flag sur <strong>Enabled</strong></span>
+            </div>
+            <div class="flag-step">
+              <span class="step-number">3</span>
+              <span>Cliquez <strong>Relaunch</strong> pour redémarrer Chrome</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan Button -->
+        <button id="scanBtn" class="scan-button" disabled>
+          <span class="scan-button-glow"></span>
+          <span class="material-symbols-outlined scan-button-icon">bluetooth_searching</span>
+          <span class="scan-button-label">INITIALISATION...</span>
+        </button>
+
+        <p class="hero-hint">
+          <span class="material-symbols-outlined hint-icon">info</span>
+          Scan passif — détection via le Company ID (<code>0x0171</code>) et le nom de l'appareil
+        </p>
+      </div>
+    </section>
+
+    <!-- Scanner Section -->
+    <section id="scannerSection" class="scanner-section hidden">
+      <div class="scanner-inner">
+
+        <!-- Scanner Header -->
+        <div class="scanner-header">
+          <div class="scanner-header-left">
+            <span class="material-symbols-outlined header-icon">sensors</span>
+            <h2 class="scanner-title">RÉSULTATS DU SCAN</h2>
+          </div>
+          <div class="scanner-header-right">
+            <span id="scanStatus" class="scan-status">
+              <span class="status-dot"></span>
+              <span class="status-text">EN COURS...</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Radar Animation -->
+        <div id="radarContainer" class="radar-container">
+          <div class="radar">
+            <div class="radar-sweep"></div>
+            <div class="radar-ring ring-1"></div>
+            <div class="radar-ring ring-2"></div>
+            <div class="radar-ring ring-3"></div>
+            <div class="radar-center"></div>
+          </div>
+          <p class="radar-label">Scan passif en cours...</p>
+          <span id="timerDisplay" class="timer-display hidden">15s</span>
+        </div>
+
+        <!-- Results List -->
+        <div id="resultsList" class="results-list"></div>
+
+        <!-- No Results -->
+        <div id="noResults" class="no-results hidden">
+          <span class="material-symbols-outlined no-results-icon">bluetooth_disabled</span>
+          <p class="no-results-text">Aucun Flipper Zero détecté à proximité.</p>
+          <p class="no-results-hint">Assurez-vous que le Bluetooth du Flipper est actif et à portée.</p>
+        </div>
+
+        <!-- Scan Again Button -->
+        <div class="scanner-actions">
+          <button id="scanAgainBtn" class="scan-again-button hidden">
+            <span class="material-symbols-outlined">refresh</span>
+            <span>RELANCER LE SCAN</span>
+          </button>
+          
+          <button id="fallbackScanBtn" class="fallback-button hidden">
+            <span class="material-symbols-outlined">settings_bluetooth</span>
+            <span>UTILISER LE SÉLECTEUR CHROME</span>
+          </button>
+        </div>
+
+        <!-- Live Log Console -->
+        <div id="logSection" class="log-section hidden">
+          <div class="log-header" id="logToggle">
+            <div class="log-header-left">
+              <span class="material-symbols-outlined log-header-icon">terminal</span>
+              <span class="log-title">BLE_LOGS</span>
+              <span id="logCount" class="log-count">0</span>
+            </div>
+            <div class="log-header-right">
+              <button id="logClearBtn" class="log-clear-btn">
+                <span class="material-symbols-outlined" style="font-size:14px">delete</span>
+                CLEAR
+              </button>
+              <span class="material-symbols-outlined log-chevron" id="logChevron">expand_more</span>
+            </div>
+          </div>
+          <div id="logBody" class="log-body">
+            <div id="logEntries" class="log-entries"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Info Section -->
+    <section class="info-section">
+      <div class="info-inner">
+        <div class="info-border">
+          <span class="info-diamond"></span>
+
+          <div class="info-tag">
+            <span class="material-symbols-outlined info-tag-icon">terminal</span>
+            <span class="info-tag-text">/LOGS_INFO</span>
+          </div>
+
+          <h2 class="info-title">
+            Comment ça <span class="accent">fonctionne ?</span>
+          </h2>
+
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-card-header">
+                <span class="material-symbols-outlined card-icon">bluetooth</span>
+                <span class="card-number">01</span>
+              </div>
+              <h3 class="card-title">Web Bluetooth API</h3>
+              <p class="card-desc">
+                Chrome permet aux pages web d'interagir avec les appareils BLE via l'API Web Bluetooth, directement depuis le navigateur.
+              </p>
+            </div>
+
+            <div class="info-card">
+              <div class="info-card-header">
+                <span class="material-symbols-outlined card-icon">fingerprint</span>
+                <span class="card-number">02</span>
+              </div>
+              <h3 class="card-title">Identification MAC</h3>
+              <p class="card-desc">
+                Chaque Flipper Zero possède une adresse MAC BLE débutant par <code>80:E1:26</code>, un préfixe unique à Flipper Devices Inc.
+              </p>
+            </div>
+
+            <div class="info-card">
+              <div class="info-card-header">
+                <span class="material-symbols-outlined card-icon">security</span>
+                <span class="card-number">03</span>
+              </div>
+              <h3 class="card-title">Scan Passif</h3>
+              <p class="card-desc">
+                Le scan est purement passif — aucune connexion n'est établie avec l'appareil détecté. Seule l'annonce BLE est analysée.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Diagnostic Section -->
+    <section id="diagnosticSection" class="diagnostic-section">
+      <div class="diag-inner">
+        <div class="diag-header">
+          <span class="material-symbols-outlined diag-icon">analytics</span>
+          <h2 class="diag-title">SYSTEM_DIAGNOSTICS</h2>
+        </div>
+        
+        <div class="diag-grid">
+          <div class="diag-item" id="diagSecure">
+            <span class="diag-label">SECURE_CONTEXT</span>
+            <span class="diag-value">...</span>
+          </div>
+          <div class="diag-item" id="diagBluetooth">
+            <span class="diag-label">BT_ADAPTER</span>
+            <span class="diag-value">...</span>
+          </div>
+          <div class="diag-item" id="diagScanning">
+            <span class="diag-label">SCANNING_API</span>
+            <span class="diag-value">...</span>
+          </div>
+          <div class="diag-item" id="diagAgent">
+            <span class="diag-label">BROWSER_AGENT</span>
+            <span class="diag-value">...</span>
+          </div>
+        </div>
+        
+        <div class="diag-help">
+          <span class="material-symbols-outlined help-icon">help</span>
+          <p>Si un composant est <span class="text-danger">OFFLINE</span>, le scan ne pourra pas détecter votre Flipper.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="footer-inner">
+      <p class="footer-copy">© 2026 // FLIPPER_SCAN</p>
+      <p class="footer-tech">BUILT WITH WEB BLUETOOTH API // CHROME ONLY</p>
+    </div>
+  </footer>
+
+  <script src="circuit.js"></script>
+  <script src="scanner.js"></script>
+</body>
+</html>
