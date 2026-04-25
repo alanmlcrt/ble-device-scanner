@@ -18,7 +18,10 @@
   const flagWarning = document.getElementById("flagWarning");
   const scannerSection = document.getElementById("scannerSection");
   const radarContainer = document.getElementById("radarContainer");
+  const flipperResults = document.getElementById("flipperResults");
   const resultsList = document.getElementById("resultsList");
+  const otherDevicesWrapper = document.getElementById("otherDevicesWrapper");
+  const otherDevicesCount = document.getElementById("otherDevicesCount");
   const noResults = document.getElementById("noResults");
   const scanAgainBtn = document.getElementById("scanAgainBtn");
   const fallbackScanBtn = document.getElementById("fallbackScanBtn");
@@ -139,7 +142,10 @@
   function resetUI(modeName) {
     detectedDevices = [];
     advertCounter = 0;
+    flipperResults.innerHTML = "";
     resultsList.innerHTML = "";
+    otherDevicesWrapper.classList.add("hidden");
+    otherDevicesCount.textContent = "0";
     noResults.classList.add("hidden");
     scanAgainBtn.classList.add("hidden");
     fallbackScanBtn.classList.add("hidden");
@@ -244,7 +250,17 @@
 
         if (isNew) {
           detectedDevices.push({ device: { id: deviceId, name, rssi }, isFlipper });
-          resultsList.appendChild(createResultCard({ id: deviceId, name, rssi }, isFlipper));
+          
+          const card = createResultCard({ id: deviceId, name, rssi }, isFlipper);
+          if (isFlipper) {
+            flipperResults.appendChild(card);
+          } else {
+            resultsList.appendChild(card);
+            otherDevicesWrapper.classList.remove("hidden");
+            const otherCount = detectedDevices.filter(d => !d.isFlipper).length;
+            otherDevicesCount.textContent = otherCount;
+          }
+          
           addLog(isFlipper ? "MATCH" : "NEW", `Detecté: <strong>${escapeHtml(name || 'Sans nom')}</strong> (${deviceId.substring(0,10)})`, isFlipper ? "flipper" : "new");
         } else {
           const d = detectedDevices.find(d => d.device.id === deviceId);
@@ -304,7 +320,15 @@
       
       if (!detectedDevices.some(d => d.device.id === device.id)) {
         detectedDevices.push({ device: { id: device.id, name: device.name, rssi: null }, isFlipper });
-        resultsList.appendChild(createResultCard({ id: device.id, name: device.name, rssi: null }, isFlipper));
+        const card = createResultCard({ id: device.id, name: device.name, rssi: null }, isFlipper);
+        if (isFlipper) {
+          flipperResults.appendChild(card);
+        } else {
+          resultsList.appendChild(card);
+          otherDevicesWrapper.classList.remove("hidden");
+          const otherCount = detectedDevices.filter(d => !d.isFlipper).length;
+          otherDevicesCount.textContent = otherCount;
+        }
       }
       
       addLog(isFlipper ? "MATCH" : "NEW", `Sélectionné: <strong>${escapeHtml(device.name || 'Sans nom')}</strong>`, isFlipper ? "flipper" : "new");

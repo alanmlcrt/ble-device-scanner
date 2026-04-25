@@ -136,7 +136,23 @@
         </div>
 
         <!-- Results List -->
-        <div id="resultsList" class="results-list"></div>
+        <div id="flipperResults" class="results-list"></div>
+
+        <!-- Other Devices Toggle -->
+        <div id="otherDevicesWrapper" class="other-devices-wrapper hidden">
+          <details class="other-devices-details">
+            <summary class="other-devices-summary">
+              <div class="summary-content">
+                <div class="summary-left">
+                  <span class="material-symbols-outlined summary-icon">expand_more</span>
+                  <span class="summary-label">AUTRES APPAREILS DÉTECTÉS</span>
+                </div>
+                <span id="otherDevicesCount" class="summary-count">0</span>
+              </div>
+            </summary>
+            <div id="resultsList" class="results-list"></div>
+          </details>
+        </div>
 
         <!-- No Results -->
         <div id="noResults" class="no-results hidden">
