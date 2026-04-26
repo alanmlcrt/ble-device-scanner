@@ -106,36 +106,100 @@
     return n.includes("flipper") || n.startsWith("flip");
   }
 
+  function estimateDistance(rssi) {
+    if (rssi === undefined || rssi === null) return null;
+    const txPower = -59;
+    const pathLoss = 2.0;
+    const distance = Math.pow(10, (txPower - rssi) / (10 * pathLoss));
+    return distance.toFixed(1);
+  }
+
   // --- UI Components ---
   function createResultCard(device, isFlipper) {
     const card = document.createElement("div");
-    card.className = "result-card";
+    card.className = `result-card ${isFlipper ? 'flipper-featured' : ''}`;
     card.setAttribute("data-device-id", device.id);
     const signal = rssiToSignal(device.rssi);
     const rssiText = device.rssi !== undefined && device.rssi !== null ? `${device.rssi} dBm` : "N/A";
+    const distance = estimateDistance(device.rssi);
     
-    card.innerHTML = `
-      <div class="result-icon-wrap ${isFlipper ? 'flipper-detected' : ''}">
-        <span class="material-symbols-outlined">${isFlipper ? 'phishing' : 'bluetooth'}</span>
-      </div>
-      <div class="result-info">
-        <p class="result-name ${isFlipper ? 'is-flipper' : ''}">${escapeHtml(device.name || "Sans nom")}</p>
-        <p class="result-details">ID: ${escapeHtml(device.id.substring(0, 20))}</p>
-        <div class="result-rssi">${signalBarsHtml(signal.bars)}<span>${signal.label} (${rssiText})</span></div>
-      </div>
-      <span class="result-badge ${isFlipper ? 'flipper' : 'unknown'}">
-        <span class="material-symbols-outlined" style="font-size:12px">${isFlipper ? 'verified' : 'device_unknown'}</span>
-        ${isFlipper ? '🐬 FLIPPER ZERO' : 'APPAREIL BLE'}
-      </span>`;
+    if (isFlipper) {
+      card.innerHTML = `
+        <div class="flipper-featured-glow"></div>
+        <div class="flipper-scanline"></div>
+        <div class="result-icon-wrap flipper-detected">
+          <span class="material-symbols-outlined">phishing</span>
+        </div>
+        <div class="result-info">
+          <div class="flipper-header">
+            <p class="result-name is-flipper">${escapeHtml(device.name || "FLIPPER ZERO")}</p>
+            <span class="result-badge flipper">
+              <span class="material-symbols-outlined" style="font-size:12px">verified</span>
+              DETECTED
+            </span>
+          </div>
+          <p class="result-details">HARDWARE_ID: ${escapeHtml(device.id)}</p>
+          <div class="flipper-metrics">
+            <div class="metric-item">
+              <span class="metric-label">SIGNAL</span>
+              <div class="metric-value">
+                ${signalBarsHtml(signal.bars)}
+                <span class="metric-text">${signal.label} (${rssiText})</span>
+              </div>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">PORTÉE ESTIMÉE</span>
+              <div class="metric-value">
+                <span class="material-symbols-outlined" style="font-size:16px; color:var(--primary)">straighten</span>
+                <span class="metric-text distance-val distance-highlight">${distance ? 'env. ' + distance + 'm' : 'calcul...'}</span>
+              </div>
+              <div class="range-bar-bg">
+                <div class="range-bar-fill" style="width: ${distance ? Math.min(100, (distance / 20) * 100) + '%' : '0%'}"></div>
+              </div>
+            </div>
+          </div>
+          <p class="flipper-env-hint">Estimation basée sur un scan à l'air libre (n=2.0)</p>
+        </div>`;
+    } else {
+      card.innerHTML = `
+        <div class="result-icon-wrap">
+          <span class="material-symbols-outlined">bluetooth</span>
+        </div>
+        <div class="result-info">
+          <p class="result-name">${escapeHtml(device.name || "Sans nom")}</p>
+          <p class="result-details">ID: ${escapeHtml(device.id.substring(0, 20))}</p>
+          <div class="result-rssi">${signalBarsHtml(signal.bars)}<span>${signal.label} (${rssiText})</span></div>
+        </div>
+        <span class="result-badge unknown">
+          <span class="material-symbols-outlined" style="font-size:12px">device_unknown</span>
+          APPAREIL BLE
+        </span>`;
+    }
     return card;
   }
 
   function updateDeviceRssi(deviceId, rssi) {
-    const card = resultsList.querySelector(`[data-device-id="${CSS.escape(deviceId)}"]`);
+    const card = document.querySelector(`[data-device-id="${CSS.escape(deviceId)}"]`);
     if (!card) return;
     const signal = rssiToSignal(rssi);
-    const el = card.querySelector(".result-rssi");
-    if (el) el.innerHTML = `${signalBarsHtml(signal.bars)}<span>${signal.label} (${rssi} dBm)</span>`;
+    const distance = estimateDistance(rssi);
+
+    if (card.classList.contains("flipper-featured")) {
+      const signalEl = card.querySelector(".metric-item:first-child .metric-text");
+      const signalBars = card.querySelector(".metric-item:first-child .signal-bars");
+      const distanceEl = card.querySelector(".distance-val");
+      const rangeFill = card.querySelector(".range-bar-fill");
+
+      if (signalEl) signalEl.textContent = `${signal.label} (${rssi} dBm)`;
+      if (signalBars) signalBars.innerHTML = signalBarsHtml(signal.bars).replace('<span class="signal-bars">', '').replace('</span>', '');
+      if (distanceEl) distanceEl.textContent = distance ? 'env. ' + distance + 'm' : 'calcul...';
+      if (rangeFill && distance) {
+        rangeFill.style.width = Math.min(100, (distance / 20) * 100) + "%";
+      }
+    } else {
+      const el = card.querySelector(".result-rssi");
+      if (el) el.innerHTML = `${signalBarsHtml(signal.bars)}<span>${signal.label} (${rssi} dBm)</span>`;
+    }
   }
 
   // --- UI Reset/Finish ---
