@@ -21,6 +21,10 @@
 
   <!-- Top Nav Bar -->
   <nav id="topNav">
+    <a href="https://alanmlcrt.fr" class="nav-back" aria-label="Retour au site principal alanmlcrt.fr">
+      <span class="material-symbols-outlined nav-back-icon">arrow_back</span>
+      <span class="nav-back-label">ACCEUIL</span>
+    </a>
     <a href="#" class="nav-brand">
       <span class="text-glow">FLIPPER_SCAN</span>
       <span class="nav-dot"></span>
@@ -55,6 +59,32 @@
         <div id="browserWarning" class="browser-warning hidden">
           <span class="material-symbols-outlined">warning</span>
           <span>Ce navigateur ne supporte pas le Web Bluetooth. Utilisez <strong>Google Chrome</strong>.</span>
+        </div>
+
+        <!-- iPhone Warning -->
+        <div id="iphoneWarning" class="iphone-warning hidden">
+          <div class="iphone-warning-header">
+            <span class="material-symbols-outlined">phone_iphone</span>
+            <span class="iphone-warning-title">iPhone détecté</span>
+          </div>
+          <p class="iphone-warning-text">
+            Le scan Bluetooth Web ne fonctionne pas sur iPhone avec ce navigateur.
+            Ouvrez cette page dans l'app <strong>Bluefy</strong>, puis lancez le scan depuis Bluefy.
+          </p>
+          <div class="iphone-warning-steps">
+            <div class="iphone-step">
+              <span class="step-number">1</span>
+              <span>Installez ou ouvrez <strong>Bluefy</strong> sur votre iPhone</span>
+            </div>
+            <div class="iphone-step">
+              <span class="step-number">2</span>
+              <span>Rouvrez cette page dans Bluefy</span>
+            </div>
+            <div class="iphone-step">
+              <span class="step-number">3</span>
+              <span>Lancez ensuite le scan Bluetooth depuis Bluefy</span>
+            </div>
+          </div>
         </div>
 
         <!-- Chrome Flag Warning -->

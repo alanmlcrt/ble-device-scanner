@@ -15,6 +15,7 @@
   const scanBtnLabel = scanBtn.querySelector(".scan-button-label");
   const scanBtnIcon = scanBtn.querySelector(".scan-button-icon");
   const browserWarning = document.getElementById("browserWarning");
+  const iphoneWarning = document.getElementById("iphoneWarning");
   const flagWarning = document.getElementById("flagWarning");
   const scannerSection = document.getElementById("scannerSection");
   const radarContainer = document.getElementById("radarContainer");
@@ -417,6 +418,8 @@
     const diagScanning = document.querySelector("#diagScanning .diag-value");
     const diagAgent = document.querySelector("#diagAgent .diag-value");
 
+    const isIPhone = /iPhone/i.test(navigator.userAgent);
+
     // Browser Detection
     let browserName = navigator.userAgent.split(" ").pop();
     if (navigator.userAgent.includes("Chrome")) browserName = "Chrome ✓";
@@ -433,6 +436,16 @@
     } else {
       diagSecure.textContent = "UNSECURE / ERROR";
       diagSecure.className = "diag-value offline";
+    }
+
+    if (isIPhone) {
+      iphoneWarning.classList.remove("hidden");
+      browserWarning.classList.add("hidden");
+      diagBluetooth.textContent = "IOS_LIMITATION";
+      diagBluetooth.className = "diag-value error";
+      scanBtn.disabled = true;
+      scanBtnLabel.textContent = "BLUEFY REQUIS";
+      return;
     }
 
     // Bluetooth Support
