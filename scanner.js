@@ -8,6 +8,13 @@
   "use strict";
 
   const FLIPPER_COMPANY_ID = 0x0171;
+  // Meta Platforms, Meta Platforms Technologies (ex-Oculus), Luxottica (Ray-Ban/Oakley)
+  const META_COMPANY_IDS = [0x01AB, 0x058E, 0x0D53];
+  const META_SERVICE_UUID = "0000fd5f-0000-1000-8000-00805f9b34fb";
+  const TARGETS = {
+    flipper: { label: "FLIPPER ZERO", icon: "phishing" },
+    meta: { label: "LUNETTES META", icon: "eyeglasses" }
+  };
   const SCAN_DURATION = 15;
 
   // --- DOM Elements ---
@@ -107,6 +114,24 @@
     return n.includes("flipper") || n.startsWith("flip");
   }
 
+  function isMetaByName(name) {
+    if (!name) return false;
+    const n = name.toLowerCase();
+    return n.includes("ray-ban") || n.includes("rayban") || n.includes("meta") || n.includes("oakley");
+  }
+
+  // Returns "flipper" | "meta" | null
+  function detectKind(name, manufacturerData, uuids) {
+    if (isFlipperByName(name)) return "flipper";
+    if (isMetaByName(name)) return "meta";
+    for (const cid of manufacturerData ? manufacturerData.keys() : []) {
+      if (cid === FLIPPER_COMPANY_ID) return "flipper";
+      if (META_COMPANY_IDS.includes(cid)) return "meta";
+    }
+    if (uuids && uuids.includes(META_SERVICE_UUID)) return "meta";
+    return null;
+  }
+
   function estimateDistance(rssi) {
     if (rssi === undefined || rssi === null) return null;
     const txPower = -59;
@@ -116,7 +141,8 @@
   }
 
   // --- UI Components ---
-  function createResultCard(device, isFlipper) {
+  function createResultCard(device, kind) {
+    const isFlipper = !!kind;
     const card = document.createElement("div");
     card.className = `result-card ${isFlipper ? 'flipper-featured' : ''}`;
     card.setAttribute("data-device-id", device.id);
@@ -129,14 +155,14 @@
         <div class="flipper-featured-glow"></div>
         <div class="flipper-scanline"></div>
         <div class="result-icon-wrap flipper-detected">
-          <span class="material-symbols-outlined">phishing</span>
+          <span class="material-symbols-outlined">${TARGETS[kind].icon}</span>
         </div>
         <div class="result-info">
           <div class="flipper-header">
-            <p class="result-name is-flipper">${escapeHtml(device.name || "FLIPPER ZERO")}</p>
+            <p class="result-name is-flipper">${escapeHtml(device.name || TARGETS[kind].label)}</p>
             <span class="result-badge flipper">
               <span class="material-symbols-outlined" style="font-size:12px">verified</span>
-              DETECTED
+              ${kind === "meta" ? "META" : "DETECTED"}
             </span>
           </div>
           <p class="result-details">HARDWARE_ID: ${escapeHtml(device.id)}</p>
@@ -160,6 +186,7 @@
             </div>
           </div>
           <p class="flipper-env-hint">Estimation basée sur un scan à l'air libre (n=2.0)</p>
+          ${kind === "meta" ? `<p class="flipper-env-hint">⚠ Peut aussi être un casque Meta Quest (même identifiant Bluetooth).</p>` : ""}
         </div>`;
     } else {
       card.innerHTML = `
@@ -253,6 +280,12 @@
     stopCountdown();
   }
 
+  function countSummary() {
+    const f = detectedDevices.filter(d => d.kind === "flipper").length;
+    const m = detectedDevices.filter(d => d.kind === "meta").length;
+    return [f && `${f} FLIPPER(S)`, m && `${m} META`].filter(Boolean).join(" + ");
+  }
+
   function finishScanUI() {
     stopScan();
     isScanning = false;
@@ -271,10 +304,10 @@
       statusText.textContent = "AUCUN RÉSULTAT";
     } else if (fc > 0) {
       statusDot.className = "status-dot done";
-      statusText.textContent = `✓ ${fc} FLIPPER(S) / ${detectedDevices.length} APPAREILS`;
+      statusText.textContent = `✓ ${countSummary()} / ${detectedDevices.length} APPAREILS`;
     } else {
       statusDot.className = "status-dot done";
-      statusText.textContent = `${detectedDevices.length} APPAREILS — AUCUN FLIPPER`;
+      statusText.textContent = `${detectedDevices.length} APPAREILS — AUCUNE CIBLE`;
     }
   }
 
@@ -300,23 +333,19 @@
         const rssi = event.rssi;
         const isNew = !detectedDevices.some(d => d.device.id === deviceId);
         
-        let isFlipper = isFlipperByName(name);
+        const kind = detectKind(name, event.manufacturerData, event.uuids);
+        const isFlipper = !!kind;
         
-        // Check manufacturer data
-        if (event.manufacturerData && event.manufacturerData.size > 0) {
+        if (isNew && event.manufacturerData) {
           for (const [cid, dv] of event.manufacturerData) {
-            if (cid === FLIPPER_COMPANY_ID) isFlipper = true;
-            if (isNew) {
-              const hex = dataViewToHex(dv);
-              addLog("MFR", `Company: <strong>0x${cid.toString(16).toUpperCase()}</strong> | <span class="hl">${hex}</span>`, "data");
-            }
+            addLog("MFR", `Company: <strong>0x${cid.toString(16).toUpperCase()}</strong> | <span class="hl">${dataViewToHex(dv)}</span>`, "data");
           }
         }
 
         if (isNew) {
-          detectedDevices.push({ device: { id: deviceId, name, rssi }, isFlipper });
+          detectedDevices.push({ device: { id: deviceId, name, rssi }, isFlipper, kind });
           
-          const card = createResultCard({ id: deviceId, name, rssi }, isFlipper);
+          const card = createResultCard({ id: deviceId, name, rssi }, kind);
           if (isFlipper) {
             flipperResults.appendChild(card);
           } else {
@@ -335,7 +364,7 @@
 
         const fc = detectedDevices.filter(d => d.isFlipper).length;
         statusText.textContent = fc > 0
-          ? `⚠ ${fc} FLIPPER(S) — ${detectedDevices.length} appareils`
+          ? `⚠ ${countSummary()} — ${detectedDevices.length} appareils`
           : `${detectedDevices.length} APPAREIL(S) DÉTECTÉ(S)`;
         if (fc > 0) statusDot.className = "status-dot done";
       };
@@ -381,11 +410,12 @@
         optionalServices: ["generic_access"]
       });
       
-      const isFlipper = isFlipperByName(device.name);
+      const kind = detectKind(device.name);
+      const isFlipper = !!kind;
       
       if (!detectedDevices.some(d => d.device.id === device.id)) {
-        detectedDevices.push({ device: { id: device.id, name: device.name, rssi: null }, isFlipper });
-        const card = createResultCard({ id: device.id, name: device.name, rssi: null }, isFlipper);
+        detectedDevices.push({ device: { id: device.id, name: device.name, rssi: null }, isFlipper, kind });
+        const card = createResultCard({ id: device.id, name: device.name, rssi: null }, kind);
         if (isFlipper) {
           flipperResults.appendChild(card);
         } else {
