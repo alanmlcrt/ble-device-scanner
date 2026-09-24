@@ -1,8 +1,8 @@
-# 🐬 Flipper Scanner | BLE Detection Tool
+# 🐬 BLE Device Scanner | BLE Detection Tool
 
 Outil web de détection Bluetooth Low Energy (BLE) conçu spécifiquement pour identifier les appareils **Flipper Zero** à proximité.
 
-![Flipper Scanner Preview](https://img.shields.io/badge/Status-Active-brightgreen)
+![BLE Device Scanner Preview](https://img.shields.io/badge/Status-Active-brightgreen)
 ![Tech](https://img.shields.io/badge/Tech-Web_Bluetooth_API-blue)
 ![Browser](https://img.shields.io/badge/Browser-Chrome_Only-orange)
 
@@ -18,8 +18,8 @@ Outil web de détection Bluetooth Low Energy (BLE) conçu spécifiquement pour i
 
 1. Clonez le dépôt :
    ```bash
-   git clone https://github.com/votre-utilisateur/flipper-scanner.git
-   cd flipper-scanner
+   git clone https://github.com/alanmlcrt/ble-device-scanner.git
+   cd ble-device-scanner
    ```
 
 2. Lancez avec Docker Compose :
@@ -37,7 +37,7 @@ Pour déployer cette application sur votre instance **Dokploy** :
 2. **Ajouter un Service** : Choisissez **"Compose"** pour utiliser le fichier `docker-compose.yml` existant.
 3. **Source du Code** :
    - Sélectionnez **GitHub**.
-   - Connectez votre compte et choisissez le dépôt `flipper-scanner`.
+   - Connectez votre compte et choisissez le dépôt `ble-device-scanner`.
    - Sélectionnez la branche `main`.
 4. **Configuration** :
    - Dokploy détectera automatiquement le fichier `docker-compose.yml`.

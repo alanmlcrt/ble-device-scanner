@@ -515,8 +515,8 @@
   scanBtn.addEventListener("click", startPassiveScan);
   
   scanAgainBtn.addEventListener("click", () => {
-    noResults.querySelector(".no-results-text").textContent = "Aucun Flipper Zero détecté à proximité.";
-    noResults.querySelector(".no-results-hint").textContent = "Assurez-vous que le Bluetooth du Flipper est actif.";
+    noResults.querySelector(".no-results-text").textContent = "Aucun Flipper Zero ni lunettes Meta détecté à proximité.";
+    noResults.querySelector(".no-results-hint").textContent = "Assurez-vous que le Bluetooth de l'appareil est actif.";
     startPassiveScan();
   });
   
